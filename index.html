@@ -1,468 +1,284 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Izhikevich Neuron Simulation</title>
-    <style>
-        /* Define CSS Variables for Theming */
-        :root {
-            --bg-color: #121212;
-            --text-color: #fff;
-            --canvas-bg: #222;
-            --border-color: #555;
-            --control-bg: #333;
-            --control-text: #fff;
-            --control-border: #555;
-            --slider-track: #555;
-            --slider-thumb: #007bff;
-            --slider-thumb-border: #0056b3;
-            --slider-thumb-hover: #0056b3;
-            --button-bg: #444;
-            --button-text: #fff;
-            --button-border: #777;
-            --button-hover: #666;
-            --button-active: #888;
-            --axis-color: #888;
-            --label-color: #ccc;
-            --plot-color: #00aaff; /* Brighter blue for dark bg */
-            --section-border: #555;
-            --value-box-bg: #333;
-            --value-box-text: #fff;
-            --value-box-border: #555;
-            --toggle-btn-bg: #555;
-            --toggle-btn-text: #fff;
-            --toggle-btn-hover: #777;
-        }
-
-        body.light-mode {
-            --bg-color: #f4f4f4;
-            --text-color: #333;
-            --canvas-bg: #ffffff;
-            --border-color: #ccc;
-            --control-bg: #eee;
-            --control-text: #333;
-            --control-border: #ccc;
-            --slider-track: #ccc;
-            /* Keep thumb color or change? Let's keep it distinct */
-            /* --slider-thumb: #007bff; */
-            /* --slider-thumb-border: #0056b3; */
-            /* --slider-thumb-hover: #0056b3; */
-            --button-bg: #e0e0e0;
-            --button-text: #333;
-            --button-border: #bbb;
-            --button-hover: #d0d0d0;
-            --button-active: #c0c0c0;
-            --axis-color: #aaa;
-            --label-color: #555;
-            --plot-color: #0056b3; /* Darker blue for light bg */
-            --section-border: #ccc;
-            --value-box-bg: #eee;
-            --value-box-text: #333;
-            --value-box-border: #ccc;
-            --toggle-btn-bg: #ddd;
-            --toggle-btn-text: #333;
-            --toggle-btn-hover: #bbb;
-        }
-
-        /* General Styles using Variables */
-        body {
-            margin: 0; display: flex; flex-direction: column; align-items: center;
-            justify-content: flex-start; min-height: 100vh;
-            background-color: var(--bg-color);
-            font-family: 'Arial', sans-serif; color: var(--text-color);
-            padding-top: 60px; /* Add space for the fixed button */
-            padding-bottom: 20px;
-            transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition */
-        }
-        #simulationCanvas {
-             background-color: var(--canvas-bg);
-             border: 1px solid var(--border-color);
-             margin-top: 0; /* Adjusted margin */
-             transition: background-color 0.3s ease, border-color 0.3s ease;
-        }
-        #controls {
-            display: flex; flex-direction: row; flex-wrap: nowrap; align-items: flex-start;
-            margin-top: 20px; width: 90%; max-width: 900px; justify-content: space-between;
-        }
-        .sliders-container { display: flex; flex-direction: column; width: 58%; }
-        .controls-buttons-container {
-             display: flex; flex-direction: column; width: 38%; align-items: center;
-         }
-        .control-group {
-            display: flex; flex-direction: column; margin-bottom: 15px; width: 100%;
-        }
-        .control-group label {
-            margin-bottom: 5px; font-weight: bold; color: var(--label-color); display: flex;
-            justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box;
-            transition: color 0.3s ease;
-        }
-        .control-group.ton-group label { justify-content: center; margin-top: 10px; }
-        .control-group input[type="range"] {
-            width: 100%; cursor: pointer; height: 8px; background: var(--slider-track); border-radius: 4px; outline: none;
-            transition: background-color 0.3s ease;
-        }
-        .control-group input[type="number"] {
-             padding: 5px 8px; background-color: var(--control-bg); color: var(--control-text); border: 1px solid var(--control-border);
-             border-radius: 4px; width: 80px; margin-left: 10px; text-align: center;
-             transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-         }
-        /* Slider Thumb Styles */
-        .control-group input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; background: var(--slider-thumb); border-radius: 50%; cursor: pointer; border: 2px solid var(--slider-thumb-border); }
-        .control-group input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: var(--slider-thumb); border-radius: 50%; cursor: pointer; border: 2px solid var(--slider-thumb-border); }
-        .control-group input[type="range"]::-webkit-slider-thumb:hover { background: var(--slider-thumb-hover); }
-        .control-group input[type="range"]::-moz-range-thumb:hover { background: var(--slider-thumb-hover); }
-
-        #behaviorText {
-            margin-top: 20px; font-size: 18px; font-weight: bold; color: var(--text-color); text-align: center;
-            padding: 10px; border: 1px solid var(--border-color); background-color: var(--control-bg); border-radius: 5px;
-            width: 90%; max-width: 900px; box-sizing: border-box; order: 3;
-            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-        }
-        #presetButtons {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;
-            max-width: 300px; margin-top: 20px;
-        }
-        #presetButtons button {
-            padding: 10px 5px; border: none; border-radius: 5px; color: var(--button-text); font-size: 13px;
-            cursor: pointer; transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-            width: 100%; text-align: center;
-            box-sizing: border-box; background-color: var(--button-bg); border: 1px solid var(--button-border);
-        }
-        #presetButtons button:hover { background-color: var(--button-hover); }
-        #presetButtons button:active { background-color: var(--button-active); }
-        /* Specific Button Styles (Can override general button vars if needed, but often not necessary) */
-        #startButton { background-color: #4CAF50; color: #fff; } /* Keep specific colors for action buttons */
-        #startButton:hover { background-color: #367c39; }
-        #startButton:active { background-color: #2b5e2e; }
-        #resetButton { background-color: #ffc107; color: #000; }
-        #resetButton:hover { background-color: #ffb300; }
-        #resetButton:active { background-color: #ffa000; }
-
-        /* Styles using Variables continued */
-        .value-box {
-            padding: 3px 8px; border: 1px solid var(--value-box-border); border-radius: 5px; background-color: var(--value-box-bg);
-            color: var(--value-box-text); font-size: 13px; min-width: 40px; text-align: center; margin-left: 10px;
-            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-        }
-        .section-title {
-             margin-bottom: 15px; font-weight:bold; border-bottom: 1px solid var(--section-border);
-             padding-bottom: 5px; width: 100%; text-align: left;
-             color: var(--text-color); /* Ensure section title color changes */
-             transition: border-color 0.3s ease, color 0.3s ease;
-        }
-
-        /* Theme Toggle Button Style */
-        #themeToggleBtn {
-            position: fixed; /* Keep it visible */
-            top: 10px;
-            right: 15px;
-            padding: 8px 12px;
-            font-size: 12px;
-            cursor: pointer;
-            border-radius: 5px;
-            border: 1px solid var(--border-color);
-            background-color: var(--toggle-btn-bg);
-            color: var(--toggle-btn-text);
-            z-index: 1000; /* Ensure it's above other elements */
-            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-        }
-        #themeToggleBtn:hover {
-            background-color: var(--toggle-btn-hover);
-        }
-
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Izhikevich Neuron Visualizer</title>
+  <style>
+    :root{
+      --bg:#0f1720; --panel:#0b1220; --muted:#9aa4b2; --accent:#00aaff; --success:#28a745; --card:#0f1a26; --control-bg:#0d1116; --glass: rgba(255,255,255,0.03);
+      --text:#e6eef6; --danger:#dc3545; --warning:#ffc107; --border: rgba(255,255,255,0.06); --slider-bg: rgba(255,255,255,0.08);
+    }
+    body.light-mode{ --bg:#f4f7fb; --panel:#fff; --muted:#556; --accent:#0056b3; --success:#218838; --card:#fff; --control-bg:#fafafa; --glass: rgba(0,0,0,0.03); --text:#12202a; --border: rgba(0,0,0,0.06); --slider-bg: rgba(0,0,0,0.08); }
+    /* Layout */
+    html,body{height:100%;margin:0;font-family:Inter, Arial, Helvetica, sans-serif;background:var(--bg);color:var(--text);transition:background-color 0.5s ease, color 0.5s ease;}
+    .container{width:100%;margin:0 auto;padding:18px;box-sizing:border-box;}
+    .app{display:grid;grid-template-columns:360px 1fr;gap:18px;align-items:start;}
+    /* Header */
+    .header {display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;}
+    .header h1 {font-size: 24px; margin:0;}
+    .header-left {display:flex; align-items:center; gap:8px;}
+    .header-controls {display:flex; gap:8px;}
+    /* Left controls panel */
+    .controls{background:linear-gradient(180deg,var(--panel),transparent);border:1px solid var(--border);border-radius:12px;padding:14px;box-shadow:0 6px 18px rgba(0,0,0,0.45);position:relative}
+    .controls .title{font-weight:700;margin:2px 0 12px 0;color:var(--text);font-size:16px}
+    .controls .section{margin-bottom:12px}
+    .controls .section h4{margin:0 0 8px 0;font-size:13px;color:var(--muted);font-weight:600}
+    .controls .group{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .controls label{font-size:13px;color:var(--muted);flex:1}
+    .controls .value{min-width:64px;text-align:center;background:var(--control-bg);padding:6px 8px;border-radius:8px;border:1px solid var(--border);font-weight:600;color:var(--text);margin-left:10px}
+    /* Fancy slider */
+    .range-wrap{display:flex;align-items:center;gap:8px}
+    input[type=range]{-webkit-appearance:none;width:100%;height:10px;border-radius:999px;background:var(--slider-bg);outline:none}
+    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);border:3px solid var(--panel);box-shadow:0 4px 10px rgba(0,0,0,0.5)}
+    input[type=range]:active::-webkit-slider-thumb{transform:scale(1.06)}
+    input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--accent);border:3px solid var(--panel)}
+    /* Buttons and Select */
+    .preset-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+    button.btn, select.btn {background:var(--card);border:1px solid var(--border);padding:8px 10px;border-radius:8px;color:var(--text);cursor:pointer;font-weight:600; text-align:center;}
+    button.btn:hover{transform:translateY(-1px)}
+    
+    select.btn {
+        -webkit-appearance: none; appearance: none;
+        background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns="http://www.w3.org/2000/svg" width="292.4" height="292.4"%3E%3Cpath fill="%239aa4b2" d="M287 69.4a17.6 17.6 0 0 0-13-5.4H18.4c-5 0-9.3 1.8-12.9 5.4A17.6 17.6 0 0 0 0 82.2c0 5 1.8 9.3 5.4 12.9l128 127.9c3.6 3.6 7.8 5.4 12.8 5.4s9.2-1.8 12.8-5.4L287 95c3.5-3.5 5.4-7.8 5.4-12.8 0-5-1.9-9.4-5.4-13z"/%3E%3C/svg%3E');
+        background-repeat: no-repeat; background-position: right 10px top 50%; background-size: .65em auto;
+    }
+    .primary{background:var(--success);color:#fff;}
+    .danger{background:var(--danger);color:#fff;}
+    .warning{background:var(--warning);color:#12202a;}
+    body.light-mode .warning{color:#856404;}
+    /* Right visual area */
+    .visuals{display:flex;flex-direction:column;gap:12px}
+    .canvas-card{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border:1px solid var(--border);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+    .toolbar{display:flex;gap:8px;align-items:center}
+    .toolbar .left{flex:1;display:flex;gap:8px}
+    .viewport{flex:1;display:flex;gap:12px}
+    canvas{width:100%;height:360px;border-radius:8px;border:1px solid var(--border);background:var(--card);display:block}
+    .behavior{padding:10px;border-radius:8px;background:var(--glass);border:1px solid var(--border);font-weight:700;color:var(--text)}
+    /* Responsive */
+    @media(max-width:880px){.app{grid-template-columns:1fr;}.controls{position:static;margin-bottom:12px}.container{padding:12px}}
+    /* Small helpers */
+    .small{font-size:12px;color:var(--muted)}
+    .sticky{position:sticky;top:18px}
+    input[type=number]{width:86px;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--control-bg);color:var(--text)}
+  </style>
 </head>
-<body>
-    <!-- Add the Theme Toggle Button -->
-    <button id="themeToggleBtn">Toggle Theme</button>
-
-    <canvas id="simulationCanvas" width="600" height="400"></canvas>
-
-    <div id="controls">
-        <div class="sliders-container">
-            <p class="section-title">Neuron Parameters & Input</p>
-            <div class="control-group">
-                <label for="iSlider">Input Amplitude (I): <span id="iValue" class="value-box">10</span></label>
-                <input type="range" id="iSlider" min="0" max="20" step="0.1" value="10">
-            </div>
-             <div class="control-group">
-                <label for="aSlider">a: <span id="aValue" class="value-box">0.02</span></label>
-                <input type="range" id="aSlider" min="0.01" max="0.1" step="0.01" value="0.02">
-            </div>
-            <div class="control-group">
-                <label for="bSlider">b: <span id="bValue" class="value-box">0.2</span></label>
-                <input type="range" id="bSlider" min="0.1" max="0.3" step="0.01" value="0.2">
-            </div>
-            <div class="control-group">
-                <label for="cSlider">c: <span id="cValue" class="value-box">-65</span></label>
-                <input type="range" id="cSlider" min="-70" max="-50" step="1" value="-65">
-            </div>
-            <div class="control-group">
-                <label for="dSlider">d: <span id="dValue" class="value-box">6</span></label>
-                <input type="range" id="dSlider" min="2" max="8" step="0.5" value="6">
-            </div>
+<body class="dark-mode">
+  <div class="container">
+     <div class="header">
+        <div class="header-left">
+          <h1>Neuron Visualizer</h1>
         </div>
-
-         <div class="controls-buttons-container">
-             <p class="section-title">Controls & Presets</p>
-              <div class="control-group ton-group" style="width: auto; max-width: 250px;">
-                 <label for="tOnInput">Input Start Time (ms):
-                     <input type="number" id="tOnInput" min="0" step="10" value="0">
-                 </label>
-             </div>
-             <div id="presetButtons">
-                <button id="resetButton">Reset</button>
-                <button id="startButton">Start</button>
-                <button data-a="0.02" data-b="0.20" data-c="-65" data-d="6.0" data-i="10.0">Tonic Spiking</button>
-                <button data-a="0.02" data-b="0.25" data-c="-65" data-d="6.0" data-i="0.5">Phasic Spiking</button>
-                <button data-a="0.02" data-b="0.20" data-c="-50" data-d="2.0" data-i="15.0">Tonic Bursting</button>
-                <button data-a="0.08" data-b="0.25" data-c="-50" data-d="2.0" data-i="0.5">Phasic Bursting</button>
-                <button data-a="0.02" data-b="0.20" data-c="-55" data-d="4.0" data-i="10.0">Mixed Mode</button>
-                <button data-a="0.10" data-b="0.20" data-c="-60" data-d="2.0" data-i="2.0">Subthreshold Osc.</button>
-                <button data-a="0.02" data-b="0.20" data-c="-50" data-d="2.0" data-i="17.0">Resonance</button>
-             </div>
-         </div>
+        <div class="header-controls">
+            <button id="screenshotBtn" class="btn">Screenshot</button>
+            <button id="themeToggleBtn" class="btn">Switch to Light</button>
+        </div>
     </div>
-
-    <div id="behaviorText">Neuron Behavior:</div>
-
-    <script>
-        const canvas = document.getElementById('simulationCanvas');
-        const ctx = canvas.getContext('2d');
-        // UI Elements
-        const aSlider = document.getElementById('aSlider'); const bSlider = document.getElementById('bSlider');
-        const cSlider = document.getElementById('cSlider'); const dSlider = document.getElementById('dSlider');
-        const aValueDisplay = document.getElementById('aValue'); const bValueDisplay = document.getElementById('bValue');
-        const cValueDisplay = document.getElementById('cValue'); const dValueDisplay = document.getElementById('dValue');
-        const iSlider = document.getElementById('iSlider'); const iValueDisplay = document.getElementById('iValue');
-        const tOnInput = document.getElementById('tOnInput');
-        const behaviorText = document.getElementById('behaviorText');
-        const presetButtonsContainer = document.getElementById('presetButtons');
-        const startButton = document.getElementById('startButton'); const resetButton = document.getElementById('resetButton');
-        // --- NEW: Theme Toggle ---
-        const themeToggleBtn = document.getElementById('themeToggleBtn');
-        const bodyElement = document.body;
-
-        // --- State & Parameters ---
-        let a = 0.02, b = 0.2, c = -65, d = 6;
-        let pulseAmplitude = 10;
-        let tOn = 0;
-
-        let v = -70, u = b * v;
-        const timeStep = 0.5; const historyLength = 1000;
-        let vHistory = []; let timeHistory = []; let simulationTime = 0;
-        let simulationRunning = false; let animationFrameId = null;
-
-        // --- Functions ---
-        function updateTextView(text) { behaviorText.textContent = "Neuron Behavior: " + text; }
-
-        function updateParameters() {
-            a = parseFloat(aSlider.value); b = parseFloat(bSlider.value);
-            c = parseFloat(cSlider.value); d = parseFloat(dSlider.value);
-            pulseAmplitude = parseFloat(iSlider.value);
-            tOn = parseFloat(tOnInput.value);
-            if (isNaN(tOn) || tOn < 0) tOn = 0;
-            tOnInput.value = tOn;
-            // Update display spans
-            aValueDisplay.textContent = a.toFixed(2); bValueDisplay.textContent = b.toFixed(2);
-            cValueDisplay.textContent = c; dValueDisplay.textContent = d.toFixed(1);
-            iValueDisplay.textContent = pulseAmplitude.toFixed(1);
+    <div class="app">
+      <!-- Left controls -->
+      <aside class="controls sticky" aria-label="Simulation controls">
+        <div class="title" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Neuron Controls</span>
+          <div style="display:flex;gap:6px;">
+            <button id="startButton" class="btn primary" style="background:var(--success);color:#fff;font-size:12px;padding:4px 8px;">Start</button>
+            <button id="resetButton" class="btn" style="background:var(--warning);color:#12202a;font-size:12px;padding:4px 8px;">Reset</button>
+          </div>
+        </div>
+        
+        <div class="section">
+            <h4>Neuron Model</h4>
+             <div class="group">
+                <select id="neuronModelSelect" class="btn" style="width:100%; text-align:left;">
+                  <option value="izhikevich">Izhikevich</option>
+                  <option value="soon" disabled>More models (coming soon)</option>
+                </select>
+              </div>
+        </div>
+        <div class="section">
+          <h4>Parameters</h4>
+          <div class="group">
+            <label for="aSlider">a</label>
+            <div style="flex:1;margin:0 12px 0 12px">
+              <input id="aSlider" type="range" min="0.01" max="0.1" step="0.01" value="0.02">
+            </div>
+            <div id="aValue" class="value">0.02</div>
+          </div>
+          <div class="group">
+            <label for="bSlider">b</label>
+            <div style="flex:1;margin:0 12px 0 12px"><input id="bSlider" type="range" min="0.1" max="0.3" step="0.01" value="0.2"></div>
+            <div id="bValue" class="value">0.20</div>
+          </div>
+          <div class="group">
+            <label for="cSlider">c</label>
+            <div style="flex:1;margin:0 12px 0 12px"><input id="cSlider" type="range" min="-70" max="-50" step="1" value="-65"></div>
+            <div id="cValue" class="value">-65</div>
+          </div>
+          <div class="group">
+            <label for="dSlider">d</label>
+            <div style="flex:1;margin:0 12px 0 12px"><input id="dSlider" type="range" min="2" max="8" step="0.5" value="6"></div>
+            <div id="dValue" class="value">6.0</div>
+          </div>
+        </div>
+        <div class="section">
+          <h4>Input</h4>
+          <div class="group">
+            <label for="iSlider">Amplitude I</label>
+            <div style="flex:1;margin:0 12px 0 12px"><input id="iSlider" type="range" min="0" max="20" step="0.1" value="10"></div>
+            <div id="iValue" class="value">10.0</div>
+          </div>
+          <div class="group">
+            <label for="tOnInput">Start (ms)</label>
+            <input id="tOnInput" type="number" step="10" min="0" value="0" aria-label="Input start time in milliseconds">
+          </div>
+        </div>
+        <div class="section">
+          <h4>Presets</h4>
+          <div class="preset-grid">
+            <button class="btn" data-a="0.02" data-b="0.20" data-c="-65" data-d="6" data-i="10">Tonic Spiking</button>
+            <button class="btn" data-a="0.02" data-b="0.25" data-c="-65" data-d="6" data-i="0.5">Phasic Spiking</button>
+            <button class="btn" data-a="0.02" data-b="0.20" data-c="-50" data-d="2" data-i="15">Tonic Bursting</button>
+            <button class="btn" data-a="0.08" data-b="0.25" data-c="-50" data-d="2" data-i="0.5">Phasic Bursting</button>
+            <button class="btn" data-a="0.02" data-b="0.20" data-c="-55" data-d="4" data-i="10">Mixed Mode</button>
+            <button class="btn" data-a="0.10" data-b="0.20" data-c="-60" data-d="2" data-i="2">Subthreshold</button>
+            <button class="btn" data-a="0.02" data-b="0.20" data-c="-50" data-d="2" data-i="17">Resonance</button>
+          </div>
+        </div>
+      </aside>
+      <!-- Right visuals -->
+      <main class="visuals">
+        <div class="canvas-card">
+          <div class="toolbar">
+            <div class="left small">Voltage vs Time</div>
+            <div class="small">Time: <span id="timeDisplay">0</span> ms</div>
+          </div>
+          <div class="viewport">
+            <canvas id="simulationCanvas" width="900" height="360" role="img" aria-label="Neuron voltage plot"></canvas>
+          </div>
+          <div class="behavior small" id="behaviorText">Neuron Behavior: Custom</div>
+        </div>
+        <div class="canvas-card small">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>State snapshot</div>
+            <div class="small">v: <span id="vVal">-</span> mV  u: <span id="uVal">-</span></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script>
+    // Grab elements
+    const canvas = document.getElementById('simulationCanvas'); const ctx = canvas.getContext('2d');
+    const aSlider = document.getElementById('aSlider'); const bSlider = document.getElementById('bSlider');
+    const cSlider = document.getElementById('cSlider'); const dSlider = document.getElementById('dSlider');
+    const iSlider = document.getElementById('iSlider'); const tOnInput = document.getElementById('tOnInput');
+    const aValue = document.getElementById('aValue'); const bValue = document.getElementById('bValue');
+    const cValue = document.getElementById('cValue'); const dValue = document.getElementById('dValue');
+    const iValue = document.getElementById('iValue'); const behaviorText = document.getElementById('behaviorText');
+    const vVal = document.getElementById('vVal'); const uVal = document.getElementById('uVal'); const timeDisplay = document.getElementById('timeDisplay');
+    const startButton = document.getElementById('startButton'); const resetButton = document.getElementById('resetButton');
+    const screenshotBtn = document.getElementById('screenshotBtn'); const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const presetGrid = document.querySelector('.preset-grid'); const body = document.body;
+    const neuronModelSelect = document.getElementById('neuronModelSelect');
+    // state
+    let a = 0.02, b = 0.2, c = -65, d = 6; let pulse = 10; let tOn = 0;
+    let v = -70, u = b*v; const dt = 0.5; const historyLen = 1200; let t = 0;
+    let vHistory = [], timeHistory = []; let running = false, raf = null;
+    // adapt canvas size to container for crisp rendering
+    function resizeCanvas(){
+      const rect = canvas.getBoundingClientRect(); const ratio = window.devicePixelRatio || 1;
+      canvas.width = Math.max(300, Math.floor(rect.width * ratio)); canvas.height = Math.max(180, Math.floor(rect.height * ratio));
+      ctx.setTransform(ratio,0,0,ratio,0,0); // scale drawing operations to CSS pixels
+      drawOnce();
+    }
+    // update values and displays
+    function updateParams(){
+      a = parseFloat(aSlider.value); b = parseFloat(bSlider.value); c = parseFloat(cSlider.value); d = parseFloat(dSlider.value);
+      pulse = parseFloat(iSlider.value); tOn = parseFloat(tOnInput.value)||0;
+      aValue.textContent = a.toFixed(2); bValue.textContent = b.toFixed(2); cValue.textContent = c; dValue.textContent = d.toFixed(1);
+      iValue.textContent = pulse.toFixed(1);
+      detectBehavior();
+    }
+    function izhStep(v,u,I){ const dv = (0.04*v*v + 5*v + 140 - u + I); const du = a*(b*v - u); v += dv*dt; u += du*dt; if(v>=30){ v=c; u += d; } return {v,u}; }
+    function detectBehavior(){
+      const eps = 1e-3; let behavior = 'Custom';
+      if(Math.abs(a-0.02)<eps && Math.abs(b-0.2)<eps && Math.abs(c+65)<eps && Math.abs(d-6)<eps) behavior='Tonic Spiking';
+      else if(Math.abs(a-0.02)<eps && Math.abs(b-0.25)<eps && Math.abs(c+65)<eps && Math.abs(d-6)<eps) behavior='Phasic Spiking';
+      else if(Math.abs(a-0.02)<eps && Math.abs(b-0.2)<eps && Math.abs(c+50)<eps && Math.abs(d-2)<eps) behavior='Tonic Bursting';
+      behaviorText.textContent = `Neuron Behavior: ${behavior} (I=${pulse.toFixed(1)} from ${tOn}ms)`;
+    }
+    // Plotting function (keeps same visual semantics)
+    function drawOnce(){
+      const cs = getComputedStyle(body); const axis = cs.getPropertyValue('--muted'); const plotC = cs.getPropertyValue('--accent'); const bg = cs.getPropertyValue('--card');
+      ctx.fillStyle = bg.trim() || '#07101a'; ctx.fillRect(0,0,canvas.width,canvas.height);
+      const paddingLeft = 56, paddingTop = 24, paddingRight = 18, paddingBottom = 44;
+      const w = canvas.width/ (window.devicePixelRatio ||1), h = canvas.height/(window.devicePixelRatio ||1);
+      const graphW = w - paddingLeft - paddingRight, graphH = h - paddingTop - paddingBottom;
+      ctx.strokeStyle = axis.trim(); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(paddingLeft,paddingTop); ctx.lineTo(paddingLeft,paddingTop+graphH); ctx.lineTo(paddingLeft+graphW,paddingTop+graphH); ctx.stroke();
+      ctx.font='12px Inter, Arial'; ctx.fillStyle = axis.trim(); ctx.textAlign='center'; ctx.fillText('Time (ms)', paddingLeft+graphW/2, h-12);
+      ctx.textAlign='right'; ctx.fillText('V (mV)', paddingLeft-12, paddingTop+graphH/2);
+      const minY = -90, maxY = 40, yRange = maxY - minY; const maxTime = historyLen*dt; let minT = Math.max(0, t - maxTime); let maxT = Math.max(minT+dt, t);
+      if(t < maxTime){ minT = 0; maxT = Math.max(dt, t); }
+      const timeRange = Math.max(dt, maxT - minT);
+      if(vHistory.length>1){ ctx.beginPath(); ctx.lineWidth = 2; ctx.strokeStyle = plotC.trim(); let started=false;
+        for(let i=0;i<vHistory.length;i++){
+          const tt = timeHistory[i]; if(tt < minT - dt) continue; if(tt > maxT + dt) break;
+          const x = paddingLeft + ((tt - minT)/timeRange)*graphW; let y = paddingTop + (1 - ( (vHistory[i]-minY)/yRange))*graphH;
+          y = Math.max(paddingTop, Math.min(paddingTop+graphH, y));
+          if(!started){ ctx.moveTo(x,y); started=true; } else { ctx.lineTo(x,y); }
         }
-
-        function izhikevichStep(v, u, currentI) {
-            let dv = (0.04 * v * v + 5 * v + 140 - u + currentI);
-            let du = a * (b * v - u);
-            v += dv * timeStep; u += du * timeStep;
-            if (v >= 30) { v = c; u += d; }
-            return { v, u };
-        }
-
-        // *** MODIFIED plotGraph to use CSS Variables ***
-        function plotGraph() {
-            // Get current theme colors from CSS variables
-            const computedStyle = getComputedStyle(bodyElement);
-            const axisColor = computedStyle.getPropertyValue('--axis-color').trim();
-            const labelColor = computedStyle.getPropertyValue('--label-color').trim();
-            const plotColor = computedStyle.getPropertyValue('--plot-color').trim();
-            const canvasBgColor = computedStyle.getPropertyValue('--canvas-bg').trim();
-
-            // Clear with current canvas background color
-            ctx.fillStyle = canvasBgColor;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // ctx.clearRect(0, 0, canvas.width, canvas.height); // Alternative, if fillRect causes issues
-
-            const xOffset = 60, yOffset = 40, graphBottomMargin = 50, graphRightMargin = 20;
-            const graphWidth = canvas.width - xOffset - graphRightMargin;
-            const graphHeight = canvas.height - yOffset - graphBottomMargin;
-            const graphOriginX = xOffset; const graphOriginY = canvas.height - graphBottomMargin;
-            const minY = -90, maxY = 40, yRange = maxY - minY;
-            const maxHistoryTime = historyLength * timeStep;
-            let minDisplayTime = Math.max(0, simulationTime - maxHistoryTime);
-            let maxDisplayTime = minDisplayTime + maxHistoryTime;
-             if (simulationTime < maxHistoryTime) {
-                 minDisplayTime = 0; maxDisplayTime = Math.max(timeStep, simulationTime);
-             }
-             const timeRange = maxDisplayTime - minDisplayTime <= 0 ? timeStep : maxDisplayTime - minDisplayTime;
-
-            // Axes
-            ctx.beginPath(); ctx.strokeStyle = axisColor; ctx.lineWidth = 1;
-            ctx.moveTo(graphOriginX, yOffset); ctx.lineTo(graphOriginX, graphOriginY); // Y
-            ctx.moveTo(graphOriginX, graphOriginY); ctx.lineTo(canvas.width - graphRightMargin, graphOriginY); // X
-            ctx.stroke();
-            // Labels
-            ctx.font = '12px Arial'; ctx.fillStyle = labelColor; ctx.textAlign = 'center';
-            ctx.fillText('Time (ms)', graphOriginX + graphWidth / 2, canvas.height - 15);
-            ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-            ctx.fillText('V (mV)', xOffset - 15, yOffset + graphHeight / 2);
-            // Y Ticks
-            ctx.textAlign = 'right'; const tickStep = 20;
-            for (let voltage = minY; voltage <= maxY; voltage += tickStep) {
-                const y = graphOriginY - ((voltage - minY) / yRange) * graphHeight;
-                if (y < yOffset - 5 || y > graphOriginY + 5) continue;
-                ctx.beginPath(); ctx.moveTo(graphOriginX - 5, y); ctx.lineTo(graphOriginX, y);
-                ctx.strokeStyle = axisColor; ctx.stroke(); ctx.fillText(voltage, graphOriginX - 10, y);
-            }
-            // X Ticks
-             ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-             const xTickInterval = Math.pow(10, Math.floor(Math.log10(timeRange))) / 2 || 50;
-             for (let t = Math.ceil(minDisplayTime / xTickInterval) * xTickInterval; t <= maxDisplayTime; t += xTickInterval) {
-                  const x = graphOriginX + ((t - minDisplayTime) / timeRange) * graphWidth;
-                  if (x < graphOriginX - 5 || x > graphOriginX + graphWidth + 5) continue;
-                  ctx.beginPath(); ctx.moveTo(x, graphOriginY); ctx.lineTo(x, graphOriginY + 5);
-                  ctx.strokeStyle = axisColor; ctx.stroke(); ctx.fillText(Math.round(t), x, graphOriginY + 8);
-             }
-            // Voltage Plot
-            if (vHistory.length > 1) {
-                ctx.beginPath(); ctx.strokeStyle = plotColor; ctx.lineWidth = 2; // Use plotColor variable
-                let firstPointIndex = -1;
-                 for(let i=0; i < timeHistory.length; i++) { if(timeHistory[i] >= minDisplayTime - timeStep){ firstPointIndex = i; break; } }
-                 if(firstPointIndex === -1 && vHistory.length > 0) firstPointIndex = 0;
-                if(firstPointIndex > -1) {
-                    let startX = graphOriginX + ((timeHistory[firstPointIndex] - minDisplayTime) / timeRange) * graphWidth;
-                    let startY = graphOriginY - ((vHistory[firstPointIndex] - minY) / yRange) * graphHeight;
-                    startY = Math.max(yOffset, Math.min(graphOriginY, startY)); ctx.moveTo(startX, startY);
-                    for (let i = firstPointIndex + 1; i < vHistory.length; i++) {
-                         if(timeHistory[i] < minDisplayTime - timeStep) continue; if(timeHistory[i] > maxDisplayTime + timeStep) break;
-                        const x = graphOriginX + ((timeHistory[i] - minDisplayTime) / timeRange) * graphWidth;
-                        let y = graphOriginY - ((vHistory[i] - minY) / yRange) * graphHeight; y = Math.max(yOffset, Math.min(graphOriginY, y));
-                        if (vHistory[i-1] >= 30 && vHistory[i] === c) { ctx.stroke(); ctx.beginPath(); ctx.moveTo(x, y); } else { ctx.lineTo(x, y); }
-                    }
-                     ctx.stroke();
-                }
-            }
-        }
-
-        function updateNeuronBehaviorText() {
-            const epsilon = 0.001; let behavior = "Custom";
-            // Behavior detection logic... (remains the same)
-             if (Math.abs(a - 0.02) < epsilon && Math.abs(b - 0.2) < epsilon && Math.abs(c - (-65)) < epsilon && Math.abs(d - 6) < epsilon) behavior = "Tonic Spiking";
-             else if (Math.abs(a - 0.02) < epsilon && Math.abs(b - 0.25) < epsilon && Math.abs(c - (-65)) < epsilon && Math.abs(d - 6) < epsilon) behavior = "Phasic Spiking";
-             else if (Math.abs(a - 0.02) < epsilon && Math.abs(b - 0.2) < epsilon && Math.abs(c - (-50)) < epsilon && Math.abs(d - 2) < epsilon) behavior = "Tonic Bursting";
-             else if (Math.abs(a - 0.08) < epsilon && Math.abs(b - 0.25) < epsilon && Math.abs(c - (-50)) < epsilon && Math.abs(d - 2) < epsilon) behavior = "Phasic Bursting (Alt)";
-             else if (Math.abs(a - 0.02) < epsilon && Math.abs(b - 0.2) < epsilon && Math.abs(c - (-55)) < epsilon && Math.abs(d - 4) < epsilon) behavior = "Mixed Mode";
-             else if (Math.abs(a - 0.1) < epsilon && Math.abs(b - 0.2) < epsilon && Math.abs(c - (-60)) < epsilon && Math.abs(d - 2) < epsilon) behavior = "Subthreshold Oscillation";
-             else if (Math.abs(a - 0.02) < epsilon && Math.abs(b - 0.2) < epsilon && Math.abs(c - (-50)) < epsilon && Math.abs(d - 2) < epsilon && Math.abs(pulseAmplitude - 17) < epsilon ) behavior = "Resonance (Driven)";
-
-            behavior += ` (I=${pulseAmplitude.toFixed(1)} from ${tOn}ms onwards)`;
-            updateTextView(behavior);
-        }
-
-        function stopSimulation() {
-             simulationRunning = false; startButton.textContent = "Start"; startButton.style.backgroundColor = "#4CAF50";
-             if (animationFrameId) { cancelAnimationFrame(animationFrameId); animationFrameId = null; }
-        }
-
-         function startSimulation() {
-             if (simulationRunning) return; updateParameters(); simulationRunning = true;
-             startButton.textContent = "Stop"; startButton.style.backgroundColor = "#f44336";
-             if (vHistory.length === 0) { vHistory.push(v); timeHistory.push(simulationTime); plotGraph(); }
-             animationFrameId = requestAnimationFrame(simulate);
-         }
-
-         function resetSimulationState() {
-             stopSimulation();
-             // Reset parameters
-             aSlider.value = "0.02"; bSlider.value = "0.2"; cSlider.value = "-65"; dSlider.value = "6";
-             iSlider.value = "10";
-             tOnInput.value = "0";
-             updateParameters();
-
-             // Reset state variables
-             v = c; u = b * v; simulationTime = 0; vHistory = []; timeHistory = [];
-             updateNeuronBehaviorText();
-
-             // Add initial point and redraw
-             vHistory.push(v); timeHistory.push(simulationTime);
-             plotGraph(); // Redraw with potentially new theme colors
-         }
-
-        function simulate() {
-            if (!simulationRunning) return;
-            let currentI = (simulationTime >= tOn) ? pulseAmplitude : 0;
-            const result = izhikevichStep(v, u, currentI); v = result.v; u = result.u;
-            simulationTime += timeStep;
-            // Store history
-            vHistory.push(v); timeHistory.push(simulationTime);
-            while (vHistory.length > historyLength) { vHistory.shift(); timeHistory.shift(); }
-            // Plotting and next frame
-            plotGraph(); animationFrameId = requestAnimationFrame(simulate);
-        }
-
-        // --- NEW: Theme Toggling Logic ---
-        function applyTheme(theme) {
-            if (theme === 'light') {
-                bodyElement.classList.add('light-mode');
-                themeToggleBtn.textContent = '🌙 Dark Mode'; // Icon suggestion
-            } else {
-                bodyElement.classList.remove('light-mode');
-                themeToggleBtn.textContent = '☀️ Light Mode'; // Icon suggestion
-            }
-            // Redraw graph immediately to reflect new theme colors
-            plotGraph();
-        }
-
-        // --- Event Listeners ---
-        aSlider.addEventListener('input', () => { updateParameters(); updateNeuronBehaviorText(); });
-        bSlider.addEventListener('input', () => { updateParameters(); updateNeuronBehaviorText(); });
-        cSlider.addEventListener('input', () => { updateParameters(); updateNeuronBehaviorText(); });
-        dSlider.addEventListener('input', () => { updateParameters(); updateNeuronBehaviorText(); });
-        iSlider.addEventListener('input', () => { updateParameters(); updateNeuronBehaviorText(); });
-        tOnInput.addEventListener('change', () => { updateParameters(); updateNeuronBehaviorText(); });
-
-        // Preset buttons
-        presetButtonsContainer.addEventListener('click', function(event) {
-            if (event.target.tagName === 'BUTTON' && event.target.dataset.a) {
-                const button = event.target; stopSimulation();
-                aSlider.value = button.dataset.a; bSlider.value = button.dataset.b;
-                cSlider.value = button.dataset.c; dSlider.value = button.dataset.d;
-                iSlider.value = button.dataset.i;
-                updateParameters();
-                v = c; u = b * v; simulationTime = 0; vHistory = []; timeHistory = [];
-                updateNeuronBehaviorText(); vHistory.push(v); timeHistory.push(simulationTime);
-                startSimulation();
-            }
-        });
-        // Start/Stop Button
-        startButton.addEventListener('click', () => { if (!simulationRunning) { startSimulation(); } else { stopSimulation(); } });
-        // Reset Button
-        resetButton.addEventListener('click', resetSimulationState);
-
-        // --- NEW: Theme Toggle Button Listener ---
-        themeToggleBtn.addEventListener('click', () => {
-            let newTheme = bodyElement.classList.contains('light-mode') ? 'dark' : 'light';
-            localStorage.setItem('theme', newTheme); // Save preference
-            applyTheme(newTheme);
-        });
-
-        // --- Initial setup ---
-        // Load theme preference on start
-        let savedTheme = localStorage.getItem('theme') || 'dark'; // Default to dark
-        applyTheme(savedTheme);
-
-        // Reset simulation state (which also calls plotGraph with the correct theme)
-        resetSimulationState();
-
-    </script>
+        ctx.stroke();
+      }
+    }
+    function simulate(){ if(!running) return; const I = (t>=tOn)?pulse:0; const res = izhStep(v,u,I); v = res.v; u = res.u; t += dt; vHistory.push(v); timeHistory.push(t); while(vHistory.length>historyLen){ vHistory.shift(); timeHistory.shift(); }
+      vVal.textContent = v.toFixed(2); uVal.textContent = u.toFixed(2); timeDisplay.textContent = Math.round(t);
+      drawOnce(); raf = requestAnimationFrame(simulate);
+    }
+    // controls wiring
+    [aSlider,bSlider,cSlider,dSlider,iSlider].forEach(el => el.addEventListener('input', ()=>{ updateParams(); }));
+    tOnInput.addEventListener('change', ()=>{ updateParams(); });
+    document.querySelectorAll('.preset-grid button[data-a]').forEach(btn=> btn.addEventListener('click', (e)=>{
+      const B = e.currentTarget.dataset; 
+      if(running) startButton.click(); // Stop if running
+      aSlider.value = B.a; bSlider.value = B.b; cSlider.value = B.c; dSlider.value = B.d; iSlider.value = B.i; updateParams();
+      v = c; u = b*v; t = 0; vHistory = []; timeHistory = []; vHistory.push(v); timeHistory.push(t); drawOnce();
+    }));
+    startButton.addEventListener('click', ()=>{ 
+      if(!running){ 
+        running=true; startButton.textContent='Stop'; startButton.style.background = 'var(--danger)'; startButton.style.color = '#fff';
+        if(vHistory.length===0){ vHistory.push(v); timeHistory.push(t);} raf = requestAnimationFrame(simulate); 
+      } else { 
+        running=false; startButton.textContent='Start'; startButton.style.background = 'var(--success)'; startButton.style.color = '#fff';
+        cancelAnimationFrame(raf); raf=null; 
+      } 
+    });
+    resetButton.addEventListener('click', ()=>{
+      if(running) startButton.click(); // Stop if running
+      aSlider.value='0.02'; bSlider.value='0.2'; cSlider.value='-65'; dSlider.value='6'; iSlider.value='10'; tOnInput.value='0'; updateParams(); v = c; u = b*v; t = 0; vHistory=[]; timeHistory=[]; vHistory.push(v); timeHistory.push(t); drawOnce();
+    });
+    screenshotBtn.addEventListener('click', ()=>{
+      const model = neuronModelSelect.value;
+      const now = new Date();
+      const date = now.toISOString().slice(0, 10).replace(/-/g, '');
+      const time = now.toTimeString().slice(0, 8).replace(/:/g, '');
+      const filename = `${model}_${date}_${time}.png`;
+      const url = canvas.toDataURL('image/png'); const a = document.createElement('a'); a.href=url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    });
+    // theme
+    function applyTheme(th){ 
+      if(th==='light'){ 
+        body.classList.add('light-mode'); themeToggleBtn.textContent='Switch to Dark'; 
+      } else { 
+        body.classList.remove('light-mode'); themeToggleBtn.textContent='Switch to Light'; 
+      } 
+      localStorage.setItem('neuron_theme', th); drawOnce(); 
+    }
+    themeToggleBtn.addEventListener('click', ()=>{ const next = body.classList.contains('light-mode')? 'dark':'light'; applyTheme(next); });
+    
+    // init
+    const savedTheme = localStorage.getItem('neuron_theme')||'dark'; applyTheme(savedTheme);
+    updateParams(); v = c; u = b*v; vHistory.push(v); timeHistory.push(t);
+    window.addEventListener('resize', ()=>{ resizeCanvas(); });
+    setTimeout(()=> resizeCanvas(),60);
+  </script>
 </body>
 </html>
