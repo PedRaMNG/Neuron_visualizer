@@ -56,10 +56,16 @@
     canvas{width:100%;height:360px;border-radius:8px;border:1px solid var(--border);background:var(--card);display:block}
     .behavior{padding:10px;border-radius:8px;background:var(--glass);border:1px solid var(--border);font-weight:700;color:var(--text)}
     /* Responsive */
-    @media(max-width:880px){.app{grid-template-columns:1fr;}.controls{position:static;margin-bottom:12px}.container{padding:12px}}
+    @media(max-width:880px){.app{grid-template-columns:1fr;grid-auto-flow:dense}.controls{position:static;margin-bottom:12px;order:2}.visuals{order:1}.container{padding:12px}}
     /* Small helpers */
     .small{font-size:12px;color:var(--muted)}
     .sticky{position:sticky;top:18px}
+    /* On narrow viewports, disable sticky positioning to avoid overlap
+       and reduce canvas height a bit for better fit */
+    @media(max-width:880px){
+      .sticky{position:static;top:auto}
+      canvas{height:280px}
+    }
     input[type=number]{width:86px;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--control-bg);color:var(--text)}
   </style>
 </head>
